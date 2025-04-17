@@ -3,7 +3,6 @@ let currentResults = [];
 let currentPage = 1;
 const resultsPerPage = 9;
 let isLoading = false;
-const OMDB_API_KEY = 'be69aad';
 
 // Éléments du DOM
 const searchInput = document.getElementById('searchInput');
@@ -67,7 +66,7 @@ async function searchSeries() {
         isLoading = true;
         showLoading();
 
-        const response = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(query)}&type=series`);
+        const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
         if (!response.ok) {
             throw new Error('Erreur lors de la recherche');
         }
@@ -77,7 +76,7 @@ async function searchSeries() {
             throw new Error(data.Error === 'Movie not found!' ? 'Aucune série trouvée' : data.Error);
         }
 
-        currentResults = data.Search;
+        currentResults = data;
         currentPage = 1;
 
         displayResults();
@@ -124,7 +123,7 @@ function displayResults() {
 async function showDetails(imdbID) {
     try {
         showLoading();
-        const response = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbID}&plot=full`);
+        const response = await fetch(`/api/details?id=${imdbID}`);
         if (!response.ok) {
             throw new Error('Erreur lors de la récupération des détails');
         }

@@ -54,4 +54,28 @@ app.get('/api/search', async (req, res) => {
 // Démarrer le serveur
 app.listen(PORT, () => {
     console.log(`Serveur démarré sur http://localhost:${PORT}`);
-}); 
+});
+
+// Route pour obtenir les détails d'une série
+app.get('/api/details', async (req, res) => {
+    try {
+        const { id } = req.query;
+        if (!id) {
+            return res.status(400).json({ error: 'L\'ID est requis' });
+        }
+
+        const response = await fetch(
+            `http://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${id}&plot=full`
+        );
+        const data = await response.json();
+
+        if (data.Error) {
+            return res.status(404).json({ error: data.Error });
+        }
+
+        res.json(data);
+    } catch (error) {
+        console.error('Erreur serveur:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
