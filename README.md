@@ -22,27 +22,12 @@ Une application web moderne permettant de rechercher et découvrir des séries T
 
 ## Installation
 
-1. Clonez le repository :
+1. Clonez le dépôt :
 ```bash
 git clone [URL_DU_REPO]
-cd films
 ```
 
-2. Ouvrez le fichier `public/js/script.js` et assurez-vous que la clé API OMDB est configurée :
-```javascript
-const OMDB_API_KEY = 'be69aad';
-```
-
-3. Lancez un serveur local dans le dossier `public`. Par exemple avec Python :
-```bash
-# Python 3
-python -m http.server 8000
-```
-
-4. Ouvrez votre navigateur et accédez à :
-```
-http://localhost:8000
-```
+2. Ouvrez le fichier `index.html` dans votre navigateur ou utilisez un serveur local.
 
 ## Structure du Projet
 
