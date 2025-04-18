@@ -12,13 +12,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// Middleware pour la gestion des erreurs
+app.use((err, req, res, next) => {
+    console.error('Erreur serveur:', err);
+    res.status(500).json({
+        error: 'Une erreur est survenue sur le serveur',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
 // Route pour la page d'accueil
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Route API pour rechercher des séries
-app.get('/api/search', async (req, res) => {
+app.get('/api/search', async (req, res, next) => {
     try {
         const { query } = req.query;
         if (!query) {
@@ -28,26 +37,53 @@ app.get('/api/search', async (req, res) => {
         const response = await fetch(
             `http://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&s=${encodeURIComponent(query)}&type=series`
         );
+
+        if (!response.ok) {
+            throw new Error(`Erreur API OMDB: ${response.status}`);
+        }
+
         const data = await response.json();
 
         if (data.Error) {
-            return res.status(404).json({ error: data.Error });
+            return res.status(404).json({
+                error: data.Error === 'Movie not found!' ? 'Aucune série trouvée' : data.Error
+            });
         }
 
-        // Récupérer les détails pour chaque série
+        if (!data.Search || !Array.isArray(data.Search)) {
+            return res.status(404).json({ error: 'Format de données invalide' });
+        }
+
+        // Récupérer les détails pour chaque série avec gestion des erreurs
         const detailedResults = await Promise.all(
             data.Search.map(async (show) => {
-                const detailResponse = await fetch(
-                    `http://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${show.imdbID}&plot=short`
-                );
-                return detailResponse.json();
+                try {
+                    if (!show.imdbID) {
+                        throw new Error('ID IMDB manquant');
+                    }
+
+                    const detailResponse = await fetch(
+                        `http://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${show.imdbID}&plot=short`
+                    );
+
+                    if (!detailResponse.ok) {
+                        throw new Error(`Erreur API détails: ${detailResponse.status}`);
+                    }
+
+                    return detailResponse.json();
+                } catch (error) {
+                    console.error(`Erreur lors de la récupération des détails pour ${show.imdbID}:`, error);
+                    return null;
+                }
             })
         );
 
-        res.json(detailedResults);
+        // Filtrer les résultats null
+        const validResults = detailedResults.filter(result => result !== null);
+
+        res.json(validResults);
     } catch (error) {
-        console.error('Erreur serveur:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        next(error);
     }
 });
 
